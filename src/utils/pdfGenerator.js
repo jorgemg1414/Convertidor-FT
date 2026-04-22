@@ -126,7 +126,6 @@ export async function generatePDF(factura, sucursalId = null) {
   const CW = W - ML - MR // 196mm
 
   const cf = factura.cfdi || {}
-  const titulo = factura.tipo === 'pago' ? 'RECIBO DE PAGO' : 'COMPROBANTE FISCAL'
 
   const qrSize = 30
   const headW = CW - qrSize - 4

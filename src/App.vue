@@ -291,7 +291,7 @@
 import { ref } from 'vue'
 import { parseFactura } from './utils/xmlParser.js'
 import { downloadPDF, previewPDF } from './utils/pdfGenerator.js'
-import { FolderOpen, ArrowDownToLine, Download, Eye, Paperclip, X, AlertCircle, MapPin, ChevronDown, Clock, Trash2, FileText, CreditCard } from 'lucide-vue-next'
+import { FolderOpen, ArrowDownToLine, Download, Eye, Paperclip, X, AlertCircle, MapPin, Clock, Trash2, FileText, CreditCard } from 'lucide-vue-next'
 
 const HISTORIAL_KEY = 'ft_historial'
 const HISTORIAL_MAX = 30
@@ -467,9 +467,9 @@ function closePreview() {
 }
 
 function fmt(n) {
-  return new Intl.NumberFormat('es-ES', {
+  return new Intl.NumberFormat('es-MX', {
     style: 'currency',
-    currency: factura.value?.moneda || 'EUR',
+    currency: factura.value?.moneda || 'MXN',
     minimumFractionDigits: 2,
   }).format(n)
 }
@@ -698,7 +698,7 @@ function fmtDate(str) {
 .alert p { font-size: 0.875rem; }
 
 /* Preview card */
-.preview-card { padding: 0; }
+.preview-card { padding: 0; width: 100%; max-width: 960px; }
 .preview-header {
   display: flex;
   align-items: center;
