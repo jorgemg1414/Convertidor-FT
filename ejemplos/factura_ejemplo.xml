@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Ejemplo de factura XML compatible con el Convertidor de Facturas -->
+<Factura>
+  <Cabecera>
+    <NumeroFactura>FAC-2024-0042</NumeroFactura>
+    <Fecha>2024-03-15</Fecha>
+    <FechaVencimiento>2024-04-15</FechaVencimiento>
+    <Moneda>EUR</Moneda>
+  </Cabecera>
+
+  <Emisor>
+    <Nombre>Tecnosoluciones Iberia S.L.</Nombre>
+    <NIF>B-87654321</NIF>
+    <Direccion>Calle Gran Vía, 45, 3ª planta</Direccion>
+    <CodigoPostal>28013</CodigoPostal>
+    <Ciudad>Madrid</Ciudad>
+    <Telefono>+34 91 123 45 67</Telefono>
+    <Email>facturacion@tecnosoluciones.es</Email>
+  </Emisor>
+
+  <Receptor>
+    <Nombre>Distribuciones López y Asociados S.A.</Nombre>
+    <NIF>A-12345678</NIF>
+    <Direccion>Avenida Diagonal, 211, Oficina 8</Direccion>
+    <CodigoPostal>08018</CodigoPostal>
+    <Ciudad>Barcelona</Ciudad>
+  </Receptor>
+
+  <Detalle>
+    <Linea>
+      <Concepto>Desarrollo de aplicación web a medida (módulo de gestión)</Concepto>
+      <Cantidad>1</Cantidad>
+      <PrecioUnitario>3200.00</PrecioUnitario>
+      <Importe>3200.00</Importe>
+    </Linea>
+    <Linea>
+      <Concepto>Licencia anual plataforma SaaS (plan Business)</Concepto>
+      <Cantidad>2</Cantidad>
+      <PrecioUnitario>480.00</PrecioUnitario>
+      <Importe>960.00</Importe>
+    </Linea>
+    <Linea>
+      <Concepto>Consultoría técnica y análisis de requisitos</Concepto>
+      <Cantidad>8</Cantidad>
+      <PrecioUnitario>95.00</PrecioUnitario>
+      <Importe>760.00</Importe>
+    </Linea>
+    <Linea>
+      <Concepto>Formación presencial (2 sesiones × 4 horas)</Concepto>
+      <Cantidad>2</Cantidad>
+      <PrecioUnitario>350.00</PrecioUnitario>
+      <Importe>700.00</Importe>
+    </Linea>
+    <Linea>
+      <Concepto>Soporte técnico prioritario (6 meses)</Concepto>
+      <Cantidad>1</Cantidad>
+      <PrecioUnitario>540.00</PrecioUnitario>
+      <Importe>540.00</Importe>
+    </Linea>
+  </Detalle>
+
+  <Totales>
+    <BaseImponible>6160.00</BaseImponible>
+    <PorcentajeIVA>21</PorcentajeIVA>
+    <CuotaIVA>1293.60</CuotaIVA>
+    <Total>7453.60</Total>
+  </Totales>
+</Factura>
