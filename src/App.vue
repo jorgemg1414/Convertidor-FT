@@ -1,5 +1,5 @@
 <template>
-  <div class="app">
+  <div class="app" :data-theme="theme">
     <!-- Header -->
     <header class="header anim-slide-down">
       <div class="header-inner">
@@ -10,6 +10,10 @@
             <p class="logo-sub">Convertidor XML → PDF</p>
           </div>
         </div>
+        <button class="theme-toggle" @click="toggleTheme" :title="theme === 'dark' ? 'Modo claro' : 'Modo oscuro'">
+          <Sun v-if="theme === 'dark'" :size="18" stroke-width="2" />
+          <Moon v-else :size="18" stroke-width="2" />
+        </button>
       </div>
     </header>
 
@@ -288,10 +292,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { parseFactura } from './utils/xmlParser.js'
 import { downloadPDF, previewPDF } from './utils/pdfGenerator.js'
-import { FolderOpen, ArrowDownToLine, Download, Eye, Paperclip, X, AlertCircle, MapPin, Clock, Trash2, FileText, CreditCard } from 'lucide-vue-next'
+import { FolderOpen, ArrowDownToLine, Download, Eye, Paperclip, X, AlertCircle, MapPin, Clock, Trash2, FileText, CreditCard, Sun, Moon } from 'lucide-vue-next'
 
 const HISTORIAL_KEY = 'ft_historial'
 const HISTORIAL_MAX = 30
@@ -328,6 +332,16 @@ const previewUrl = ref('')
 const sucursal = ref(null)
 const historial = ref(loadHistorial())
 const generatingHistory = ref({})
+const theme = ref('light')
+
+onMounted(() => {
+  theme.value = localStorage.getItem('ft_theme') || 'light'
+})
+
+function toggleTheme() {
+  theme.value = theme.value === 'dark' ? 'light' : 'dark'
+  localStorage.setItem('ft_theme', theme.value)
+}
 
 function loadHistorial() {
   try { return JSON.parse(localStorage.getItem(HISTORIAL_KEY) || '[]') } catch { return [] }
@@ -517,6 +531,9 @@ function fmtDate(str) {
   max-width: 1100px;
   margin: 0 auto;
   padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 .logo {
   display: flex;
@@ -527,6 +544,22 @@ function fmtDate(str) {
 .logo-icon { height: 36px; width: 36px; object-fit: cover; border-radius: 50%; }
 .logo h1 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1px; }
 .logo-sub { font-size: 0.78rem; opacity: .75; }
+
+.theme-toggle {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+}
+.theme-toggle:hover {
+  background: rgba(255,255,255,0.25);
+}
 
 /* Main */
 .main {
@@ -584,16 +617,16 @@ function fmtDate(str) {
   justify-content: center;
   flex-shrink: 0;
 }
-.step-title { font-size: 1.15rem; font-weight: 600; }
+.step-title { font-size: 1.15rem; font-weight: 600; color: var(--text); }
 .step-sub { font-size: 0.9rem; color: var(--text-muted); margin-top: 3px; }
 .sucursal-badge {
   margin-left: auto;
   display: flex;
   align-items: center;
   gap: 5px;
-  background: #eff6ff;
+  background: var(--primary-bg);
   color: var(--primary);
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--primary-border);
   border-radius: 20px;
   padding: 4px 12px;
   font-size: 0.78rem;
@@ -622,7 +655,7 @@ function fmtDate(str) {
 .suc-chip:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-1px); }
 .suc-chip--active {
   background: var(--primary);
-  color: white;
+  color: var(--surface);
   border-color: var(--primary);
 }
 
@@ -650,7 +683,7 @@ function fmtDate(str) {
   border-radius: var(--radius);
 }
 .upload-card.dragging .drop-zone,
-.drop-zone:hover { background: #eff6ff; }
+.drop-zone:hover { background: var(--primary-bg); }
 .drop-icon { display: flex; justify-content: center; margin-bottom: 12px; color: var(--primary); }
 .drop-title { font-size: 1.2rem; font-weight: 600; color: var(--text); margin-bottom: 8px; }
 .drop-sub { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 22px; }
@@ -660,8 +693,8 @@ function fmtDate(str) {
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: #eff6ff;
-  border-top: 1px solid #bfdbfe;
+  background: var(--primary-bg);
+  border-top: 1px solid var(--primary-border);
   font-size: 0.875rem;
   color: var(--primary);
   font-weight: 500;
@@ -678,7 +711,7 @@ function fmtDate(str) {
   padding: 2px 6px;
   border-radius: 4px;
 }
-.clear-btn:hover { background: #dbeafe; color: var(--primary); }
+.clear-btn:hover { background: var(--primary-bg); color: var(--primary); }
 
 /* Alert */
 .alert {
@@ -759,7 +792,7 @@ function fmtDate(str) {
   border-bottom: 1px solid var(--border);
 }
 .lines-table tbody tr:last-child td { border-bottom: none; }
-.lines-table tbody tr:nth-child(even) { background: #f8fafc; }
+.lines-table tbody tr:nth-child(even) { background: var(--bg); }
 .lines-table .num { text-align: right; }
 .lines-table .center { text-align: center; }
 
@@ -855,7 +888,7 @@ function fmtDate(str) {
 .hint-card { padding: 20px 24px; }
 .section-title { font-size: 3.5rem; font-weight: 700; text-align: center; }
 .title-blue { color: var(--primary); }
-.title-orange { color: #f97316; }
+.title-orange { color: var(--warning); }
 .hint-card h3 { font-size: 1rem; margin-bottom: 6px; }
 .hint-card p { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 14px; }
 
@@ -875,17 +908,16 @@ function fmtDate(str) {
 .btn:disabled { opacity: .6; cursor: not-allowed; }
 .btn-primary { background: var(--primary); color: white; }
 .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
-.btn-secondary { background: #e2e8f0; color: var(--text); }
-.btn-secondary:hover:not(:disabled) { background: #cbd5e1; }
-.btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
-.btn-outline:hover:not(:disabled) { background: #eff6ff; }
+.btn-secondary { background: var(--border); color: var(--text); }
+.btn-secondary:hover:not(:disabled) { background: var(--text-muted); color: var(--surface); }
+.btn-outline:hover:not(:disabled) { background: var(--primary-bg); }
 .btn-sm { padding: 7px 14px; font-size: 0.82rem; }
 
 /* Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.55);
+  background: rgba(0,0,0,.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -893,7 +925,7 @@ function fmtDate(str) {
   padding: 20px;
 }
 .modal {
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius);
   width: 100%;
   max-width: 860px;
@@ -901,7 +933,7 @@ function fmtDate(str) {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
 }
 .modal-header {
   display: flex;
@@ -912,7 +944,7 @@ function fmtDate(str) {
 }
 .modal-header h3 { font-size: 1rem; }
 .close-btn {
-  background: none;
+  background: var(--border);
   border: none;
   display: flex;
   align-items: center;
@@ -921,7 +953,7 @@ function fmtDate(str) {
   border-radius: 6px;
   color: var(--text-muted);
 }
-.close-btn:hover { background: var(--border); }
+.close-btn:hover { background: var(--text-muted); color: var(--surface); }
 .pdf-frame { flex: 1; border: none; width: 100%; }
 
 /* ── Historial ────────────────────────────────────────────────────────────── */
@@ -964,7 +996,7 @@ function fmtDate(str) {
   transition: background .15s, color .15s;
 }
 .btn-ghost:hover { background: var(--border); color: var(--text); }
-.btn-ghost--danger:hover { background: #fee2e2; color: #dc2626; }
+.btn-ghost--danger:hover { background: var(--error-bg); color: var(--error); }
 
 .hist-list { display: flex; flex-direction: column; }
 
@@ -977,7 +1009,7 @@ function fmtDate(str) {
   transition: background .12s;
 }
 .hist-item:last-child { border-bottom: none; }
-.hist-item:hover { background: #f8fafc; }
+.hist-item:hover { background: var(--surface); }
 
 .hist-icon {
   width: 40px;
@@ -988,18 +1020,8 @@ function fmtDate(str) {
   justify-content: center;
   flex-shrink: 0;
 }
-.hist-icon--factura { background: #eff6ff; color: var(--primary); }
-.hist-icon--pago    { background: #f0fdf4; color: #15803d; }
-
-.hist-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-
-.hist-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.hist-numero { font-weight: 700; font-size: 0.95rem; }
+.hist-icon--factura { background: var(--primary-bg); color: var(--primary); }
+.hist-icon--pago    { background: var(--success-bg); color: var(--success); }
 
 .hist-tipo-badge {
   font-size: 0.72rem;
@@ -1007,8 +1029,8 @@ function fmtDate(str) {
   padding: 2px 8px;
   border-radius: 10px;
 }
-.badge--factura { background: #eff6ff; color: var(--primary); }
-.badge--pago    { background: #f0fdf4; color: #15803d; }
+.badge--factura { background: var(--primary-bg); color: var(--primary); }
+.badge--pago    { background: var(--success-bg); color: var(--success); }
 
 .hist-suc-badge {
   display: inline-flex;

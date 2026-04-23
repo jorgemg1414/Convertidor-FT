@@ -114,7 +114,9 @@ export async function generatePDF(factura, sucursalId = null) {
   if (qrUrl) {
     try {
       qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 150, margin: 1, errorCorrectionLevel: 'M' })
-    } catch {}
+    } catch (e) {
+      console.warn('QR generation failed:', e.message)
+    }
   }
 
   // Carta size: 216×279mm
