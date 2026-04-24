@@ -1217,7 +1217,13 @@ function fmtDate(str) {
 .pdf-frame { flex: 1; border: none; width: 100%; }
 
 /* ── Historial ────────────────────────────────────────────────────────────── */
-.hist-card { padding: 0; width: 100%; max-width: 960px; }
+.hist-card {
+  padding: 0;
+  width: 100%;
+  max-width: 960px;
+  border: 1.5px solid var(--primary);
+  box-shadow: 0 0 8px rgba(30, 64, 175, 0.25), 0 0 16px rgba(30, 64, 175, 0.1);
+}
 
 .hist-header {
   display: flex;
