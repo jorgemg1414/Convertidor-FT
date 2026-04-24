@@ -103,7 +103,7 @@
 
       <!-- Preview + Actions -->
       <Transition name="fade-up">
-        <section v-if="factura" class="card preview-card">
+        <section v-if="factura" id="preview-section" class="card preview-card">
         <div class="preview-header">
           <div>
             <h2>Factura parseada</h2>
@@ -196,16 +196,12 @@
             </div>
             <div class="totals-row" v-if="factura.totales.descuento">
               <span>Descuento</span>
-              <span>{{ fmt(factura.totales.descuento) }}</span>
+              <span class="text-error">-{{ fmt(factura.totales.descuento) }}</span>
             </div>
             <template v-if="factura.totales.impuestos && factura.totales.impuestos.length">
-              <div class="totals-row" v-for="(imp, index) in factura.totales.impuestos" :key="index">
-                <span>Base {{ imp.tipo }} ({{ imp.tasa }}%)</span>
-                <span>{{ fmt(imp.base) }}</span>
-              </div>
-              <div class="totals-row" v-for="(imp, index) in factura.totales.impuestos" :key="'c-' + index">
-                <span>{{ imp.tipo }} ({{ imp.tasa }}%)</span>
-                <span>{{ fmt(imp.cuota) }}</span>
+              <div class="totals-row totals-row--impuesto" v-for="(imp, index) in factura.totales.impuestos" :key="index">
+                <span class="impuesto-label">{{ imp.tipo }} {{ imp.tasa }}%</span>
+                <span class="impuesto-cuota">{{ fmt(imp.cuota) }}</span>
               </div>
             </template>
             <template v-else>
@@ -529,6 +525,9 @@ async function download() {
   try {
     await downloadPDF(factura.value, sucursal.value)
     fireConfetti()
+    setTimeout(() => {
+      document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
     addToast('success', 'PDF generado', `Factura ${factura.value.numero} convertida a PDF`, 3500)
   } catch (e) {
     error.value = 'Error al generar el PDF: ' + e.message
@@ -892,6 +891,20 @@ function fmtDate(str) {
   font-weight: 700;
   font-size: 1rem;
 }
+.totals-row--impuesto {
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--table-alt);
+}
+.impuesto-label {
+  font-weight: 600;
+  color: var(--text);
+}
+.impuesto-cuota {
+  font-weight: 600;
+  color: var(--primary);
+}
+.text-error { color: var(--error); }
 
 /* ── Keyframes ─────────────────────────────────────────────────────────────── */
 @keyframes slideDown {
