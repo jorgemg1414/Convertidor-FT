@@ -288,6 +288,24 @@
       </div>
     </div>
     </Transition>
+
+    <!-- Toast notifications -->
+    <Teleport to="body">
+      <div class="toast-container">
+        <TransitionGroup name="toast">
+          <ToastNotification
+            v-for="toast in toasts"
+            :key="toast.id"
+            :id="toast.id"
+            :type="toast.type"
+            :title="toast.title"
+            :message="toast.message"
+            :duration="toast.duration"
+            @close="removeToast"
+          />
+        </TransitionGroup>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -296,6 +314,8 @@ import { ref, onMounted } from 'vue'
 import { parseFactura } from './utils/xmlParser.js'
 import { downloadPDF, previewPDF } from './utils/pdfGenerator.js'
 import { FolderOpen, ArrowDownToLine, Download, Eye, Paperclip, X, AlertCircle, MapPin, Clock, Trash2, FileText, CreditCard, Sun, Moon } from 'lucide-vue-next'
+import confetti from 'canvas-confetti'
+import ToastNotification from './components/ToastNotification.vue'
 
 const HISTORIAL_KEY = 'ft_historial'
 const HISTORIAL_MAX = 30
@@ -333,6 +353,32 @@ const sucursal = ref(null)
 const historial = ref(loadHistorial())
 const generatingHistory = ref({})
 const theme = ref('light')
+const toasts = ref([])
+let toastId = 0
+
+function addToast(type, title, message, duration = 4000) {
+  const id = ++toastId
+  toasts.value.push({ id, type, title, message, duration })
+}
+
+function removeToast(id) {
+  toasts.value = toasts.value.filter(t => t.id !== id)
+}
+
+function triggerRipple(e) {
+  const btn = e.currentTarget
+  btn.classList.add('rippling')
+  setTimeout(() => btn.classList.remove('rippling'), 600)
+}
+
+function fireConfetti() {
+  confetti({
+    particleCount: 100,
+    spread: 70,
+    origin: { y: 0.6 },
+    colors: ['#1e40af', '#22c55e', '#f97316'],
+  })
+}
 
 onMounted(() => {
   theme.value = localStorage.getItem('ft_theme') || 'light'
@@ -414,6 +460,7 @@ function processXML(content) {
   try {
     factura.value = parseFactura(content)
     saveToHistorial(factura.value, sucursal.value)
+    addToast('success', 'Archivo procesado', `Factura ${factura.value.numero} cargada exitosamente`, 3500)
   } catch (e) {
     error.value = e.message || 'Error desconocido al parsear el XML.'
   }
@@ -460,6 +507,8 @@ async function download() {
   generating.value = true
   try {
     await downloadPDF(factura.value, sucursal.value)
+    fireConfetti()
+    addToast('success', 'PDF generado', `Factura ${factura.value.numero} convertida a PDF`, 3500)
   } catch (e) {
     error.value = 'Error al generar el PDF: ' + e.message
   } finally {
@@ -741,22 +790,22 @@ function fmtDate(str) {
   padding: 20px 24px 16px;
   border-bottom: 1px solid var(--border);
 }
-.preview-header h2 { font-size: 1.1rem; }
+.preview-header h2 { font-size: 1.1rem; color: var(--text); }
 .preview-sub { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
 .action-btns { display: flex; gap: 10px; flex-wrap: wrap; }
 
 /* Invoice summary */
-.invoice-summary { padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+.invoice-summary { padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; color: var(--text); }
 .summary-row { display: flex; gap: 24px; flex-wrap: wrap; }
 .info-block { display: flex; flex-direction: column; gap: 2px; }
 .info-block label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
-.info-block strong { font-size: 0.95rem; }
+.info-block strong { font-size: 0.95rem; color: var(--text); }
 
 .parties-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 580px) { .parties-grid { grid-template-columns: 1fr; } }
 .party-box {
   padding: 14px;
-  background: var(--bg);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 0.85rem;
@@ -770,7 +819,8 @@ function fmtDate(str) {
   color: var(--primary);
   margin-bottom: 4px;
 }
-.party-name { font-weight: 700; font-size: 0.95rem; }
+.party-name { font-weight: 700; font-size: 0.95rem; color: var(--text); }
+.party-box p { color: var(--text-muted); }
 
 /* Table */
 .table-wrapper { overflow-x: auto; }
@@ -790,9 +840,10 @@ function fmtDate(str) {
 .lines-table td {
   padding: 9px 12px;
   border-bottom: 1px solid var(--border);
+  color: var(--table-text, var(--text));
 }
 .lines-table tbody tr:last-child td { border-bottom: none; }
-.lines-table tbody tr:nth-child(even) { background: var(--bg); }
+.lines-table tbody tr:nth-child(even) { background: var(--table-alt, var(--surface)); }
 .lines-table .num { text-align: right; }
 .lines-table .center { text-align: center; }
 
@@ -811,6 +862,7 @@ function fmtDate(str) {
   padding: 9px 14px;
   font-size: 0.875rem;
   border-bottom: 1px solid var(--border);
+  color: var(--text);
 }
 .totals-row:last-child { border-bottom: none; }
 .total-row {
@@ -904,6 +956,8 @@ function fmtDate(str) {
   cursor: pointer;
   border: none;
   transition: background .15s, opacity .15s;
+  position: relative;
+  overflow: hidden;
 }
 .btn:disabled { opacity: .6; cursor: not-allowed; }
 .btn-primary { background: var(--primary); color: white; }
@@ -972,7 +1026,7 @@ function fmtDate(str) {
   gap: 10px;
   color: var(--text);
 }
-.hist-title { font-size: 1rem; font-weight: 600; }
+.hist-title { font-size: 1rem; font-weight: 600; color: var(--text); }
 .hist-count {
   background: var(--primary);
   color: white;
@@ -1074,5 +1128,28 @@ function fmtDate(str) {
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+}
+
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 400px;
+}
+
+.toast-enter-active { animation: toast-slide-in 0.25s ease; }
+.toast-leave-active { animation: toast-slide-out 0.2s ease forwards; }
+
+@keyframes toast-slide-in {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes toast-slide-out {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(120%); opacity: 0; }
 }
 </style>

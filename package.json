@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "canvas-confetti": "^1.9.4",
     "fast-xml-parser": "^4.3.6",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
