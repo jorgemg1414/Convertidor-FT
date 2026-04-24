@@ -441,10 +441,13 @@ export async function generatePDF(factura, sucursalId = null) {
   return doc
 }
 
-export async function downloadPDF(factura, sucursal = null) {
+export async function downloadPDF(factura, sucursal = null, onProgress) {
+  if (onProgress) onProgress(20, 'Generando PDF...')
   const doc = await generatePDF(factura, sucursal)
+  if (onProgress) onProgress(70, 'Preparando descarga...')
   const prefix = factura.tipo === 'pago' ? 'recibo_pago' : 'factura'
   doc.save(`${prefix}_${factura.numero.replace(/[^a-z0-9]/gi, '_')}.pdf`)
+  if (onProgress) onProgress(100, '¡Listo!')
 }
 
 export async function previewPDF(factura, sucursal = null) {

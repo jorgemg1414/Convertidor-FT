@@ -166,26 +166,37 @@
 
           <!-- Lines table -->
           <div class="table-wrapper">
-            <table class="lines-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Concepto</th>
-                  <th class="num">Cant.</th>
-                  <th class="num">Precio Unit.</th>
-                  <th class="num">Importe</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="l in factura.lineas" :key="l.numero">
-                  <td class="center">{{ l.numero }}</td>
-                  <td>{{ l.concepto }}</td>
-                  <td class="num">{{ fmtNum(l.cantidad) }}</td>
-                  <td class="num">{{ fmt(l.precioUnitario) }}</td>
-                  <td class="num">{{ fmt(l.importe) }}</td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="table-scroll-indicator"></div>
+            <div class="table-container">
+              <table class="lines-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Concepto</th>
+                    <th class="num">Cant.</th>
+                    <th class="num">Precio Unit.</th>
+                    <th class="num">Importe</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="l in factura.lineas" :key="l.numero">
+                    <td class="center">{{ l.numero }}</td>
+                    <td>{{ l.concepto }}</td>
+                    <td class="num">{{ fmtNum(l.cantidad) }}</td>
+                    <td class="num">{{ fmt(l.precioUnitario) }}</td>
+                    <td class="num">{{ fmt(l.importe) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div v-if="generating" class="progress-container">
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ animationDuration: progressDuration + 'ms' }"></div>
+            </div>
+            <span class="progress-text">{{ progressText }}</span>
           </div>
 
           <!-- Totals -->
@@ -240,11 +251,20 @@
 
         <!-- Empty placeholder -->
         <div v-if="!historial.length" class="hist-empty">
-          <div class="hist-empty-icon">
-            <Archive :size="48" stroke-width="1.5" />
+          <div class="hist-empty-visual">
+            <div class="empty-illustration">
+              <div class="empty-folder"></div>
+              <div class="empty-file"></div>
+              <div class="empty-file empty-file--alt"></div>
+              <div class="empty-sparkle"></div>
+              <div class="empty-sparkle empty-sparkle--2"></div>
+            </div>
           </div>
           <p class="hist-empty-title">Sin historial aún</p>
           <p class="hist-empty-sub">Las facturas que generes aparecerán aquí</p>
+          <div class="hist-empty-hint">
+            <span><FilePlus :size="14" stroke-width="1.5" /> Carga un XML para comenzar</span>
+          </div>
         </div>
 
         <!-- Historial list -->
@@ -339,7 +359,7 @@
 import { ref, onMounted } from 'vue'
 import { parseFactura } from './utils/xmlParser.js'
 import { downloadPDF, previewPDF } from './utils/pdfGenerator.js'
-import { FolderOpen, ArrowDownToLine, Download, Eye, Paperclip, X, AlertCircle, MapPin, Clock, Trash2, FileText, CreditCard, Sun, Moon, Archive } from 'lucide-vue-next'
+import { FolderOpen, ArrowDownToLine, Download, Eye, Paperclip, X, AlertCircle, MapPin, Clock, Trash2, FileText, CreditCard, Sun, Moon, Archive, FilePlus } from 'lucide-vue-next'
 import confetti from 'canvas-confetti'
 import ToastNotification from './components/ToastNotification.vue'
 
@@ -374,12 +394,15 @@ const factura = ref(null)
 const error = ref('')
 const dragging = ref(false)
 const generating = ref(false)
+const generatingProgress = ref(0)
 const previewUrl = ref('')
 const sucursal = ref(null)
 const historial = ref(loadHistorial())
 const generatingHistory = ref({})
 const theme = ref('light')
 const toasts = ref([])
+const progressText = ref('Generando PDF...')
+const progressDuration = ref(2000)
 let toastId = 0
 
 function addToast(type, title, message, duration = 4000) {
@@ -389,6 +412,11 @@ function addToast(type, title, message, duration = 4000) {
 
 function removeToast(id) {
   toasts.value = toasts.value.filter(t => t.id !== id)
+}
+
+function updateProgress(percent, text) {
+  generatingProgress.value = percent
+  if (text) progressText.value = text
 }
 
 function triggerRipple(e) {
@@ -532,14 +560,24 @@ function onDrop(e) {
 async function download() {
   if (!factura.value) return
   generating.value = true
+  generatingProgress.value = 10
+  progressText.value = 'Generando PDF...'
   try {
-    await downloadPDF(factura.value, sucursal.value)
+    await downloadPDF(factura.value, sucursal.value, updateProgress)
+    generatingProgress.value = 100
+    progressText.value = '¡Listo!'
     fireConfetti()
     addToast('success', 'PDF generado', `Factura ${factura.value.numero} convertida a PDF`, 3500)
   } catch (e) {
+    generatingProgress.value = 0
+    progressText.value = 'Error'
     error.value = 'Error al generar el PDF: ' + e.message
   } finally {
-    generating.value = false
+    setTimeout(() => {
+      generating.value = false
+      generatingProgress.value = 0
+      progressText.value = 'Generando PDF...'
+    }, 1500)
   }
 }
 
@@ -850,28 +888,80 @@ function fmtDate(str) {
 .party-box p { color: var(--text-muted); }
 
 /* Table */
-.table-wrapper { overflow-x: auto; }
+.table-wrapper { position: relative; }
+.table-scroll-indicator {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  background: linear-gradient(to left, var(--surface), transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+.table-container {
+  overflow-x: auto;
+  overflow-y: visible;
+  max-height: 400px;
+  position: relative;
+}
+.table-container::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 20px;
+  background: linear-gradient(to top, var(--table-shadow-start, rgba(0,0,0,0.05)), transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.table-container:hover::after,
+.table-container:hover .table-scroll-indicator { opacity: 1; }
 .lines-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.875rem;
+  position: relative;
+}
+.lines-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 .lines-table th {
   background: var(--primary);
   color: white;
-  padding: 10px 12px;
+  padding: 12px 14px;
   text-align: left;
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  white-space: nowrap;
 }
+.lines-table th:first-child { border-radius: 8px 0 0 0; }
+.lines-table th:last-child { border-radius: 0 8px 0 0; }
 .lines-table td {
-  padding: 9px 12px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--border);
   color: var(--table-text, var(--text));
+  transition: background .15s, transform .15s;
+}
+.lines-table tbody tr {
+  transition: background .15s, transform .15s;
+}
+.lines-table tbody tr:hover td {
+  background: var(--table-hover, var(--primary-bg));
+  transform: translateX(2px);
 }
 .lines-table tbody tr:last-child td { border-bottom: none; }
 .lines-table tbody tr:nth-child(even) { background: var(--table-alt, var(--surface)); }
-.lines-table .num { text-align: right; }
+.lines-table tbody tr:nth-child(even):hover td { background: var(--table-hover, var(--primary-bg)); }
+.lines-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .lines-table .center { text-align: center; }
 
 /* Totals */
@@ -912,6 +1002,51 @@ function fmtDate(str) {
   color: var(--primary);
 }
 .text-error { color: var(--error); }
+
+/* Progress bar */
+.progress-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  animation: progress-appear .3s ease;
+}
+@keyframes progress-appear {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-hover) 50%, var(--primary) 100%);
+  background-size: 200% 100%;
+  border-radius: 3px;
+  animation: progress-stripe 1s linear infinite;
+  width: 100%;
+  transform-origin: left;
+}
+@keyframes progress-stripe {
+  0% { transform: scaleX(0); transform-origin: left; }
+  50% { transform: scaleX(1); transform-origin: left; }
+  50.01% { transform: scaleX(1); transform-origin: right; }
+  100% { transform: scaleX(0); transform-origin: right; }
+}
+.progress-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  min-width: 120px;
+}
 
 /* ── Keyframes ─────────────────────────────────────────────────────────────── */
 @keyframes slideDown {
@@ -1100,16 +1235,86 @@ function fmtDate(str) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
+  padding: 56px 24px;
   text-align: center;
 }
-.hist-empty-icon {
-  color: var(--text-muted);
-  opacity: .4;
-  margin-bottom: 16px;
+.hist-empty-visual {
+  margin-bottom: 20px;
+}
+.empty-illustration {
+  position: relative;
+  width: 100px;
+  height: 80px;
+}
+.empty-folder {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 48px;
+  background: var(--primary-bg);
+  border: 2.5px solid var(--primary-border);
+  border-radius: 8px 8px 4px 4px;
+}
+.empty-folder::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 4px;
+  width: 20px;
+  height: 8px;
+  background: var(--primary-border);
+  border-radius: 4px 4px 0 0;
+}
+.empty-file {
+  position: absolute;
+  left: 12%;
+  top: 35%;
+  width: 16px;
+  height: 20px;
+  background: var(--border);
+  border-radius: 2px;
+  transform: rotate(-8deg);
+  opacity: 0.6;
+  animation: empty-float 3s ease-in-out infinite;
+}
+.empty-file--alt {
+  left: auto;
+  right: 12%;
+  background: var(--primary-border);
+  transform: rotate(6deg);
+  opacity: 0.5;
+  animation-delay: -1.5s;
+}
+.empty-sparkle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--primary);
+  border-radius: 50%;
+  top: 20%;
+  left: 25%;
+  animation: sparkle 2s ease-in-out infinite;
+}
+.empty-sparkle--2 {
+  top: 30%;
+  left: auto;
+  right: 20%;
+  width: 4px;
+  height: 4px;
+  animation-delay: -1s;
+}
+@keyframes empty-float {
+  0%, 100% { transform: translateY(0) rotate(-8deg); }
+  50% { transform: translateY(-6px) rotate(-4deg); }
+}
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
 }
 .hist-empty-title {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: var(--text);
   margin-bottom: 4px;
@@ -1117,6 +1322,21 @@ function fmtDate(str) {
 .hist-empty-sub {
   font-size: 0.875rem;
   color: var(--text-muted);
+  margin-bottom: 16px;
+}
+.hist-empty-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: var(--surface);
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px dashed var(--border);
+}
+.hist-empty-hint svg {
+  color: var(--primary);
 }
 
 .hist-item {

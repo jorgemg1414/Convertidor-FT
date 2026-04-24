@@ -26,8 +26,10 @@
   --primary-border: #bfdbfe;
   --success-bg: #f0fdf4;
   --success-border: #bbf7d0;
-  --table-alt: #f1f5f9;
+  --table-alt: #f8fafc;
   --table-text: #1e293b;
+  --table-hover: #e0e7ff;
+  --table-shadow-start: rgba(0,0,0,0.05);
 }
 
 [data-theme="dark"] {
@@ -51,8 +53,10 @@
   --primary-border: #1e40af;
   --success-bg: #052e16;
   --success-border: #166534;
-  --table-alt: #243049;
+  --table-alt: #1e293b;
   --table-text: #e2e8f0;
+  --table-hover: #1e3a5f;
+  --table-shadow-start: rgba(0,0,0,0.3);
 }
 
 body {
