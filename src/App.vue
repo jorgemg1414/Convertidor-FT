@@ -525,9 +525,6 @@ async function download() {
   try {
     await downloadPDF(factura.value, sucursal.value)
     fireConfetti()
-    setTimeout(() => {
-      document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 100)
     addToast('success', 'PDF generado', `Factura ${factura.value.numero} convertida a PDF`, 3500)
   } catch (e) {
     error.value = 'Error al generar el PDF: ' + e.message
