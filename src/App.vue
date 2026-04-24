@@ -660,7 +660,6 @@ function fmtDate(str) {
   z-index: 50;
   transition: background .25s ease;
 }
-.header:hover { background: var(--primary-hover); }
 .header-inner {
   max-width: 1100px;
   margin: 0 auto;
@@ -807,9 +806,9 @@ function fmtDate(str) {
 /* Cards */
 .card {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--primary);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: 0 0 8px rgba(30, 64, 175, 0.25), 0 0 16px rgba(30, 64, 175, 0.1), var(--shadow);
   overflow: hidden;
 }
 
