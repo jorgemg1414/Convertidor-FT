@@ -36,10 +36,11 @@
         </div>
         <div class="sucursal-grid">
           <button
-            v-for="s in SUCURSALES"
+            v-for="(s, index) in SUCURSALES"
             :key="s.id"
             class="suc-chip"
             :class="{ 'suc-chip--active': sucursal === s.id }"
+            :style="{ animationDelay: (index * 40 + 100) + 'ms' }"
             @click="sucursal = s.id"
           >{{ s.label }}</button>
         </div>
@@ -115,10 +116,22 @@
               <span>Vista previa</span>
             </button>
             <button class="btn btn-primary" @click="download" :disabled="generating">
-              <Download v-if="!generating" :size="16" stroke-width="2" />
-              <span v-if="!generating">Descargar PDF</span>
-              <span v-else>Generando…</span>
+              <Download v-if="!generating && pdfStatus !== 'ready'" :size="16" stroke-width="2" />
+              <Loader2 v-else-if="generating || pdfStatus === 'generating'" :size="16" stroke-width="2" class="spin" />
+              <span v-if="generating || pdfStatus === 'generating'">Generando…</span>
+              <span v-else>Descargar PDF</span>
             </button>
+          </div>
+          <!-- PDF Status Badge -->
+          <div v-if="pdfStatus !== 'idle'" class="pdf-status" :class="'pdf-status--' + pdfStatus">
+            <CheckCircle v-if="pdfStatus === 'ready'" :size="14" stroke-width="2" />
+            <AlertTriangle v-else-if="pdfStatus === 'error'" :size="14" stroke-width="2" />
+            <span class="pdf-status-text">
+              <template v-if="pdfStatus === 'generating'">Generando PDF...</template>
+              <template v-else-if="pdfStatus === 'ready'">PDF listo para descargar</template>
+              <template v-else-if="pdfStatus === 'downloaded'">PDF descargado</template>
+              <template v-else-if="pdfStatus === 'error'">Error al generar</template>
+            </span>
           </div>
         </div>
 
@@ -166,29 +179,26 @@
 
           <!-- Lines table -->
           <div class="table-wrapper">
-            <div class="table-scroll-indicator"></div>
-            <div class="table-container">
-              <table class="lines-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Concepto</th>
-                    <th class="num">Cant.</th>
-                    <th class="num">Precio Unit.</th>
-                    <th class="num">Importe</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="l in factura.lineas" :key="l.numero">
-                    <td class="center">{{ l.numero }}</td>
-                    <td>{{ l.concepto }}</td>
-                    <td class="num">{{ fmtNum(l.cantidad) }}</td>
-                    <td class="num">{{ fmt(l.precioUnitario) }}</td>
-                    <td class="num">{{ fmt(l.importe) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <table class="lines-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Concepto</th>
+                  <th class="num">Cant.</th>
+                  <th class="num">Precio Unit.</th>
+                  <th class="num">Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="l in factura.lineas" :key="l.numero">
+                  <td class="center">{{ l.numero }}</td>
+                  <td>{{ l.concepto }}</td>
+                  <td class="num">{{ fmtNum(l.cantidad) }}</td>
+                  <td class="num">{{ fmt(l.precioUnitario) }}</td>
+                  <td class="num">{{ fmt(l.importe) }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
           <!-- Progress bar -->
@@ -359,7 +369,7 @@
 import { ref, onMounted } from 'vue'
 import { parseFactura } from './utils/xmlParser.js'
 import { downloadPDF, previewPDF } from './utils/pdfGenerator.js'
-import { FolderOpen, ArrowDownToLine, Download, Eye, Paperclip, X, AlertCircle, MapPin, Clock, Trash2, FileText, CreditCard, Sun, Moon, Archive, FilePlus } from 'lucide-vue-next'
+import { FolderOpen, ArrowDownToLine, Download, Eye, Paperclip, X, AlertCircle, MapPin, Clock, Trash2, FileText, CreditCard, Sun, Moon, Archive, FilePlus, Loader2, CheckCircle, AlertTriangle } from 'lucide-vue-next'
 import confetti from 'canvas-confetti'
 import ToastNotification from './components/ToastNotification.vue'
 
@@ -395,6 +405,7 @@ const error = ref('')
 const dragging = ref(false)
 const generating = ref(false)
 const generatingProgress = ref(0)
+const pdfStatus = ref('idle') // 'idle' | 'generating' | 'ready' | 'downloaded' | 'error'
 const previewUrl = ref('')
 const sucursal = ref(null)
 const historial = ref(loadHistorial())
@@ -505,6 +516,7 @@ function reset() {
   factura.value = null
   error.value = ''
   previewUrl.value = ''
+  pdfStatus.value = 'idle'
   if (fileInput.value) fileInput.value.value = ''
 }
 
@@ -561,16 +573,19 @@ async function download() {
   if (!factura.value) return
   generating.value = true
   generatingProgress.value = 10
+  pdfStatus.value = 'generating'
   progressText.value = 'Generando PDF...'
   try {
     await downloadPDF(factura.value, sucursal.value, updateProgress)
     generatingProgress.value = 100
     progressText.value = '¡Listo!'
+    pdfStatus.value = 'downloaded'
     fireConfetti()
     addToast('success', 'PDF generado', `Factura ${factura.value.numero} convertida a PDF`, 3500)
   } catch (e) {
     generatingProgress.value = 0
     progressText.value = 'Error'
+    pdfStatus.value = 'error'
     error.value = 'Error al generar el PDF: ' + e.message
   } finally {
     setTimeout(() => {
@@ -635,9 +650,14 @@ function fmtDate(str) {
 
 /* Header */
 .header {
-  background: var(--primary);
+  background: var(--glass-header, rgba(30, 64, 175, 0.92));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: white;
   padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
   transition: background .25s ease;
 }
 .header:hover { background: var(--primary-hover); }
@@ -765,6 +785,12 @@ function fmtDate(str) {
   font-weight: 500;
   cursor: pointer;
   transition: border-color .15s, background .15s, color .15s, transform .1s;
+  animation: chip-enter .35s cubic-bezier(.22,1,.36,1) both;
+  opacity: 0;
+}
+@keyframes chip-enter {
+  from { opacity: 0; transform: scale(0.85) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 .suc-chip:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-1px); }
 .suc-chip--active {
@@ -795,6 +821,28 @@ function fmtDate(str) {
   cursor: pointer;
   transition: background .15s;
   border-radius: var(--radius);
+  position: relative;
+  overflow: hidden;
+}
+.drop-zone::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 2px dashed var(--primary);
+  border-radius: 8px;
+  opacity: 0;
+  transition: opacity .25s;
+  pointer-events: none;
+}
+.upload-card.dragging .drop-zone::before,
+.drop-zone:hover::before {
+  opacity: 0.7;
+  animation: border-scroll .6s linear infinite;
+}
+@keyframes border-scroll {
+  0% { border-color: var(--primary); transform: scale(1); }
+  50% { border-color: var(--primary-border); }
+  100% { border-color: var(--primary); transform: scale(1.01); }
 }
 .upload-card.dragging .drop-zone,
 .drop-zone:hover { background: var(--primary-bg); }
@@ -858,6 +906,41 @@ function fmtDate(str) {
 .preview-header h2 { font-size: 1.1rem; color: var(--text); }
 .preview-sub { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
 .action-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.pdf-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  animation: status-enter .25s ease;
+  margin-top: 8px;
+}
+@keyframes status-enter {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.pdf-status--generating {
+  background: var(--primary-bg);
+  color: var(--primary);
+}
+.pdf-status--generating svg { animation: spin 1s linear infinite; }
+.pdf-status--ready {
+  background: var(--success-bg);
+  color: var(--success);
+}
+.pdf-status--downloaded {
+  background: var(--success-bg);
+  color: var(--success);
+}
+.pdf-status--error {
+  background: var(--error-bg);
+  color: var(--error);
+}
+.pdf-status-text { white-space: nowrap; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 1s linear infinite; }
 
 /* Invoice summary */
 .invoice-summary { padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; color: var(--text); }
@@ -888,80 +971,28 @@ function fmtDate(str) {
 .party-box p { color: var(--text-muted); }
 
 /* Table */
-.table-wrapper { position: relative; }
-.table-scroll-indicator {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 12px;
-  background: linear-gradient(to left, var(--surface), transparent);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .2s;
-}
-.table-container {
-  overflow-x: auto;
-  overflow-y: visible;
-  max-height: 400px;
-  position: relative;
-}
-.table-container::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 20px;
-  background: linear-gradient(to top, var(--table-shadow-start, rgba(0,0,0,0.05)), transparent);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .2s;
-}
-.table-container:hover::after,
-.table-container:hover .table-scroll-indicator { opacity: 1; }
+.table-wrapper { overflow-x: auto; }
 .lines-table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: collapse;
   font-size: 0.875rem;
-  position: relative;
-}
-.lines-table thead {
-  position: sticky;
-  top: 0;
-  z-index: 2;
 }
 .lines-table th {
   background: var(--primary);
   color: white;
-  padding: 12px 14px;
+  padding: 10px 12px;
   text-align: left;
   font-weight: 600;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  white-space: nowrap;
+  font-size: 0.8rem;
 }
-.lines-table th:first-child { border-radius: 8px 0 0 0; }
-.lines-table th:last-child { border-radius: 0 8px 0 0; }
 .lines-table td {
-  padding: 12px 14px;
+  padding: 9px 12px;
   border-bottom: 1px solid var(--border);
   color: var(--table-text, var(--text));
-  transition: background .15s, transform .15s;
-}
-.lines-table tbody tr {
-  transition: background .15s, transform .15s;
-}
-.lines-table tbody tr:hover td {
-  background: var(--table-hover, var(--primary-bg));
-  transform: translateX(2px);
 }
 .lines-table tbody tr:last-child td { border-bottom: none; }
 .lines-table tbody tr:nth-child(even) { background: var(--table-alt, var(--surface)); }
-.lines-table tbody tr:nth-child(even):hover td { background: var(--table-hover, var(--primary-bg)); }
-.lines-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.lines-table .num { text-align: right; }
 .lines-table .center { text-align: center; }
 
 /* Totals */
