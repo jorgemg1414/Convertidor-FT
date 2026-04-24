@@ -245,90 +245,92 @@
       </Transition>
 
       <!-- Historial -->
-      <Transition name="fade-up">
-      <section class="card hist-card anim-fade-up">
-        <div class="hist-header">
+      <section class="card hist-card">
+        <div class="hist-header" @click="toggleHistorial" :class="{ 'hist-header--clickable': historial.length }">
           <div class="hist-title-row">
             <Clock :size="18" stroke-width="2" />
             <h2 class="hist-title">Historial reciente</h2>
             <span v-if="historial.length" class="hist-count">{{ historial.length }}</span>
           </div>
-          <button v-if="historial.length" class="btn-ghost btn-ghost--danger" @click="clearHistorial">
-            <Trash2 :size="14" stroke-width="2" />
-            Limpiar todo
-          </button>
-        </div>
-
-        <!-- Empty placeholder -->
-        <div v-if="!historial.length" class="hist-empty">
-          <div class="hist-empty-visual">
-            <div class="empty-illustration">
-              <div class="empty-folder"></div>
-              <div class="empty-file"></div>
-              <div class="empty-file empty-file--alt"></div>
-              <div class="empty-sparkle"></div>
-              <div class="empty-sparkle empty-sparkle--2"></div>
-            </div>
-          </div>
-          <p class="hist-empty-title">Sin historial aún</p>
-          <p class="hist-empty-sub">Las facturas que generes aparecerán aquí</p>
-          <div class="hist-empty-hint">
-            <span><FilePlus :size="14" stroke-width="1.5" /> Carga un XML para comenzar</span>
+          <div class="hist-header-actions">
+            <button v-if="historial.length" class="btn-ghost btn-ghost--danger" @click.stop="clearHistorial">
+              <Trash2 :size="14" stroke-width="2" />
+              Limpiar todo
+            </button>
+            <ChevronDown :size="20" stroke-width="2" class="hist-chevron" :class="{ 'hist-chevron--open': historialExpanded }" />
           </div>
         </div>
 
-        <!-- Historial list -->
-        <div v-else class="hist-list">
-          <div v-for="entry in historial" :key="entry.id" class="hist-item">
-            <!-- Ícono tipo -->
-            <div class="hist-icon" :class="entry.tipo === 'pago' ? 'hist-icon--pago' : 'hist-icon--factura'">
-              <CreditCard v-if="entry.tipo === 'pago'" :size="18" stroke-width="1.8" />
-              <FileText v-else :size="18" stroke-width="1.8" />
-            </div>
-
-            <!-- Info -->
-            <div class="hist-info">
-              <div class="hist-top">
-                <span class="hist-numero">{{ entry.numero }}</span>
-                <span class="hist-tipo-badge" :class="entry.tipo === 'pago' ? 'badge--pago' : 'badge--factura'">
-                  {{ entry.tipo === 'pago' ? 'Recibo de pago' : 'Factura' }}
-                </span>
-                <span class="hist-suc-badge" v-if="entry.sucursalLabel">
-                  <MapPin :size="11" stroke-width="2.5" />{{ entry.sucursalLabel }}
-                </span>
+        <div class="hist-content" :class="{ 'hist-content--open': historialExpanded }">
+          <div>
+            <!-- Empty placeholder -->
+            <div v-if="!historial.length" class="hist-empty">
+              <div class="hist-empty-visual">
+                <div class="empty-illustration">
+                  <div class="empty-folder"></div>
+                  <div class="empty-file"></div>
+                  <div class="empty-file empty-file--alt"></div>
+                  <div class="empty-sparkle"></div>
+                  <div class="empty-sparkle empty-sparkle--2"></div>
+                </div>
               </div>
-              <div class="hist-parties">
-                <span class="hist-emisor">{{ entry.emisorNombre }}</span>
-                <span class="hist-arrow">→</span>
-                <span class="hist-receptor">{{ entry.receptorNombre }}</span>
-              </div>
-              <div class="hist-meta">
-                <span>{{ fmtDate(entry.fecha) }}</span>
-                <span class="hist-sep">·</span>
-                <span class="hist-total">{{ fmtMXN(entry.total, entry.moneda) }}</span>
-                <span class="hist-sep">·</span>
-                <span class="hist-uuid" :title="entry.uuid">UUID: {{ entry.uuid ? entry.uuid.slice(0,8) + '…' : 'N/A' }}</span>
+              <p class="hist-empty-title">Sin historial aún</p>
+              <p class="hist-empty-sub">Las facturas que generes aparecerán aquí</p>
+              <div class="hist-empty-hint">
+                <span><FilePlus :size="14" stroke-width="1.5" /> Carga un XML para comenzar</span>
               </div>
             </div>
 
-            <!-- Acciones -->
-            <div class="hist-actions">
-              <button class="btn btn-secondary btn-sm" @click="previewFromHistorial(entry)" title="Vista previa">
-                <Eye :size="14" stroke-width="2" />
-              </button>
-              <button class="btn btn-primary btn-sm" @click="downloadFromHistorial(entry)" :disabled="generatingHistory[entry.id]">
-                <Download v-if="!generatingHistory[entry.id]" :size="14" stroke-width="2" />
-                <span v-if="!generatingHistory[entry.id]">PDF</span>
-                <span v-else>…</span>
-              </button>
-              <button class="btn-ghost" @click="removeFromHistorial(entry.id)" title="Eliminar">
-                <X :size="14" stroke-width="2.5" />
-              </button>
+            <!-- Historial list -->
+            <div v-else class="hist-list">
+              <div v-for="entry in historial" :key="entry.id" class="hist-item">
+                <div class="hist-icon" :class="entry.tipo === 'pago' ? 'hist-icon--pago' : 'hist-icon--factura'">
+                  <CreditCard v-if="entry.tipo === 'pago'" :size="18" stroke-width="1.8" />
+                  <FileText v-else :size="18" stroke-width="1.8" />
+                </div>
+
+                <div class="hist-info">
+                  <div class="hist-top">
+                    <span class="hist-numero">{{ entry.numero }}</span>
+                    <span class="hist-tipo-badge" :class="entry.tipo === 'pago' ? 'badge--pago' : 'badge--factura'">
+                      {{ entry.tipo === 'pago' ? 'Recibo de pago' : 'Factura' }}
+                    </span>
+                    <span class="hist-suc-badge" v-if="entry.sucursalLabel">
+                      <MapPin :size="11" stroke-width="2.5" />{{ entry.sucursalLabel }}
+                    </span>
+                  </div>
+                  <div class="hist-parties">
+                    <span class="hist-emisor">{{ entry.emisorNombre }}</span>
+                    <span class="hist-arrow">→</span>
+                    <span class="hist-receptor">{{ entry.receptorNombre }}</span>
+                  </div>
+                  <div class="hist-meta">
+                    <span>{{ fmtDate(entry.fecha) }}</span>
+                    <span class="hist-sep">·</span>
+                    <span class="hist-total">{{ fmtMXN(entry.total, entry.moneda) }}</span>
+                    <span class="hist-sep">·</span>
+                    <span class="hist-uuid" :title="entry.uuid">UUID: {{ entry.uuid ? entry.uuid.slice(0,8) + '…' : 'N/A' }}</span>
+                  </div>
+                </div>
+
+                <div class="hist-actions">
+                  <button class="btn btn-secondary btn-sm" @click="previewFromHistorial(entry)" title="Vista previa">
+                    <Eye :size="14" stroke-width="2" />
+                  </button>
+                  <button class="btn btn-primary btn-sm" @click="downloadFromHistorial(entry)" :disabled="generatingHistory[entry.id]">
+                    <Download v-if="!generatingHistory[entry.id]" :size="14" stroke-width="2" />
+                    <span v-if="!generatingHistory[entry.id]">PDF</span>
+                    <span v-else>…</span>
+                  </button>
+                  <button class="btn-ghost" @click="removeFromHistorial(entry.id)" title="Eliminar">
+                    <X :size="14" stroke-width="2.5" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
-      </Transition>
 
     </main>
 
@@ -369,7 +371,7 @@
 import { ref, onMounted } from 'vue'
 import { parseFactura } from './utils/xmlParser.js'
 import { downloadPDF, previewPDF } from './utils/pdfGenerator.js'
-import { FolderOpen, ArrowDownToLine, Download, Eye, Paperclip, X, AlertCircle, MapPin, Clock, Trash2, FileText, CreditCard, Sun, Moon, Archive, FilePlus, Loader2, CheckCircle, AlertTriangle } from 'lucide-vue-next'
+import { FolderOpen, ArrowDownToLine, Download, Eye, Paperclip, X, AlertCircle, MapPin, Clock, Trash2, FileText, CreditCard, Sun, Moon, Archive, FilePlus, Loader2, CheckCircle, AlertTriangle, ChevronDown } from 'lucide-vue-next'
 import confetti from 'canvas-confetti'
 import ToastNotification from './components/ToastNotification.vue'
 
@@ -409,6 +411,7 @@ const pdfStatus = ref('idle') // 'idle' | 'generating' | 'ready' | 'downloaded' 
 const previewUrl = ref('')
 const sucursal = ref(null)
 const historial = ref(loadHistorial())
+const historialExpanded = ref(false)
 const generatingHistory = ref({})
 const theme = ref('light')
 const toasts = ref([])
@@ -490,6 +493,12 @@ function removeFromHistorial(id) {
 function clearHistorial() {
   historial.value = []
   localStorage.removeItem(HISTORIAL_KEY)
+}
+
+function toggleHistorial() {
+  if (historial.value.length) {
+    historialExpanded.value = !historialExpanded.value
+  }
 }
 
 async function downloadFromHistorial(entry) {
@@ -1232,6 +1241,26 @@ function fmtDate(str) {
   padding: 18px 24px 16px;
   border-bottom: 1px solid var(--border);
 }
+.hist-header--clickable {
+  cursor: pointer;
+  user-select: none;
+  transition: background .15s;
+}
+.hist-header--clickable:hover {
+  background: var(--surface);
+}
+.hist-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hist-chevron {
+  transition: transform .25s ease;
+  color: var(--text-muted);
+}
+.hist-chevron--open {
+  transform: rotate(180deg);
+}
 .hist-title-row {
   display: flex;
   align-items: center;
@@ -1385,6 +1414,19 @@ function fmtDate(str) {
 }
 .hist-item:last-child { border-bottom: none; }
 .hist-item:hover { background: var(--surface); }
+
+.hist-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .3s ease;
+  overflow: hidden;
+}
+.hist-content > div {
+  overflow: hidden;
+}
+.hist-content--open {
+  grid-template-rows: 1fr;
+}
 
 .hist-icon {
   width: 40px;
