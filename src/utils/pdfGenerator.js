@@ -324,8 +324,10 @@ export async function generatePDF(factura, sucursalId = null) {
   const sumImporte = factura.lineas.reduce((s, l) => s + (l.importe || 0), 0)
   const sumDesc    = factura.totales.descuento || 0
   const sumSub     = sumImporte - sumDesc
-  const sumIeps    = factura.lineas.reduce((s, l) => s + (l.ieps?.importe || 0), 0)
-  const sumIva     = factura.totales.totalIva || factura.totales.cuotaIVA || 0
+  const iepsTax   = factura.totales.impuestos?.filter(i => i.tipo === 'IEPS') ?? []
+  const ivaTax    = factura.totales.impuestos?.filter(i => i.tipo === 'IVA') ?? []
+  const sumIeps   = iepsTax.reduce((s, i) => s + i.cuota, 0)
+  const sumIva    = ivaTax.reduce((s, i) => s + i.cuota, 0)
   const sumTotal   = factura.totales.total
 
   tableBody.push([
@@ -389,22 +391,15 @@ export async function generatePDF(factura, sucursalId = null) {
   y += 13
 
   // ── RESUMEN DE IMPUESTOS ────────────────────────────────────────────────────────
+  const impuestosTax = factura.totales.impuestos ?? []
+  const totalImp = impuestosTax.reduce((s, i) => s + i.cuota, 0)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(6.5)
   doc.setTextColor(...C_DARK)
-  doc.text(`Total de Impuestos: ${fmtMXN(sumIva)}`, ML, y); y += 3.5
+  doc.text(`Total de Impuestos: ${fmtMXN(totalImp)}`, ML, y); y += 3.5
 
-  // Agrupar IVA por tasa
-  const ivaGroups = {}
-  for (const l of factura.lineas) {
-    if (!l.iva) continue
-    const k = String(l.iva.tasa ?? 0)
-    if (!ivaGroups[k]) ivaGroups[k] = { base: 0, importe: 0, tasa: l.iva.tasa ?? 0 }
-    ivaGroups[k].base += l.iva.base || 0
-    ivaGroups[k].importe += l.iva.importe || 0
-  }
-  for (const g of Object.values(ivaGroups)) {
-    doc.text(`   TASA IVA: ${(g.tasa * 100).toFixed(2)}%   Base=${fmtMXN(g.base)}   TasaOCuota=${(g.tasa * 100).toFixed(2)}%   Importe=${fmtMXN(g.importe)}`, ML, y)
+  for (const imp of impuestosTax) {
+    doc.text(`   ${imp.tipo}: ${imp.tasa}%   Base=${fmtMXN(imp.base)}   TasaOCuota=${imp.tasa}%   Importe=${fmtMXN(imp.cuota)}`, ML, y)
     y += 3.5
   }
   y += 3

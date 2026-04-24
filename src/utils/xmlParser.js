@@ -132,6 +132,37 @@ function parseCFDI(comprobante) {
     ? Math.round((totalIVA / (subtotalComp - descuentoComp)) * 100)
     : 0
 
+  const ivaGroups = {}
+  const iepsGroups = {}
+  for (const l of lineas) {
+    if (l.iva) {
+      const k = String(l.iva.tasa)
+      if (!ivaGroups[k]) ivaGroups[k] = { tasa: l.iva.tasa, base: 0, cuota: 0 }
+      ivaGroups[k].base += l.iva.base || 0
+      ivaGroups[k].cuota += l.iva.importe || 0
+    }
+    if (l.ieps) {
+      const k = String(l.ieps.tasa)
+      if (!iepsGroups[k]) iepsGroups[k] = { tasa: l.ieps.tasa, base: 0, cuota: 0 }
+      iepsGroups[k].base += l.ieps.base || 0
+      iepsGroups[k].cuota += l.ieps.importe || 0
+    }
+  }
+  const impuestosAgrupados = [
+    ...Object.values(ivaGroups).map(g => ({
+      tipo: 'IVA',
+      tasa: Math.round(g.tasa * 100),
+      base: g.base,
+      cuota: g.cuota
+    })),
+    ...Object.values(iepsGroups).map(g => ({
+      tipo: 'IEPS',
+      tasa: Math.round(g.tasa * 100),
+      base: g.base,
+      cuota: g.cuota
+    }))
+  ]
+
   const serie = String(attr('Serie'))
   const folio = String(attr('Folio'))
   const numero = serie && folio ? `${serie}${folio}` : folio || serie || 'S/N'
@@ -177,6 +208,7 @@ function parseCFDI(comprobante) {
       totalIva: totalIVA,
       descuento: descuentoComp,
       total: totalComp,
+      impuestos: impuestosAgrupados,
     },
     cfdi: {
       uuid: String(tfd['@_UUID'] ?? ''),
@@ -380,7 +412,58 @@ export function parseFactura(xmlString) {
   const baseImponible = getFloat(totales, 'BaseImponible', 'baseImponible', 'TaxBase', 'taxBase', 'Subtotal')
   const porcentajeIVA = getFloat(totales, 'PorcentajeIVA', 'porcentajeIVA', 'VATRate', 'vatRate', 'TaxRate')
   const cuotaIVA = getFloat(totales, 'CuotaIVA', 'cuotaIVA', 'VATAmount', 'vatAmount', 'TaxAmount')
+  const porcentajeIEPS = getFloat(totales, 'PorcentajeIEPS', 'porcentajeIEPS', 'IEPSRate', 'iepsRate')
+  const cuotaIEPS = getFloat(totales, 'CuotaIEPS', 'cuotaIEPS', 'IEPSAmount', 'iepsAmount')
   const total = getFloat(totales, 'Total', 'total', 'TotalAmount', 'totalAmount', 'ImporteTotal')
+
+  const ivaGroupsGen = {}
+  const iepsGroupsGen = {}
+  for (const l of lineas) {
+    if (l.iva) {
+      const k = String(l.iva.tasa)
+      if (!ivaGroupsGen[k]) ivaGroupsGen[k] = { tasa: l.iva.tasa, base: 0, cuota: 0 }
+      ivaGroupsGen[k].base += l.iva.base || 0
+      ivaGroupsGen[k].cuota += l.iva.importe || 0
+    }
+    if (l.ieps) {
+      const k = String(l.ieps.tasa)
+      if (!iepsGroupsGen[k]) iepsGroupsGen[k] = { tasa: l.ieps.tasa, base: 0, cuota: 0 }
+      iepsGroupsGen[k].base += l.ieps.base || 0
+      iepsGroupsGen[k].cuota += l.ieps.importe || 0
+    }
+  }
+  let impuestosAgrupadosGen = [
+    ...Object.values(ivaGroupsGen).map(g => ({
+      tipo: 'IVA',
+      tasa: Math.round(g.tasa * 100),
+      base: g.base,
+      cuota: g.cuota
+    })),
+    ...Object.values(iepsGroupsGen).map(g => ({
+      tipo: 'IEPS',
+      tasa: Math.round(g.tasa * 100),
+      base: g.base,
+      cuota: g.cuota
+    }))
+  ]
+  if (impuestosAgrupadosGen.length === 0) {
+    if (porcentajeIVA > 0 && baseImponible > 0) {
+      impuestosAgrupadosGen.push({
+        tipo: 'IVA',
+        tasa: Math.round(porcentajeIVA),
+        base: baseImponible,
+        cuota: cuotaIVA
+      })
+    }
+    if (porcentajeIEPS > 0 && baseImponible > 0) {
+      impuestosAgrupadosGen.push({
+        tipo: 'IEPS',
+        tasa: Math.round(porcentajeIEPS),
+        base: baseImponible,
+        cuota: cuotaIEPS
+      })
+    }
+  }
 
   const factura = {
     numero: getText(cab, 'NumeroFactura', 'numeroFactura', 'InvoiceNumber', 'invoiceNumber', 'Numero') || 'S/N',
@@ -405,7 +488,7 @@ export function parseFactura(xmlString) {
       direccion: getText(receptor, 'Direccion', 'direccion', 'Address', 'address') || '',
     },
     lineas,
-    totales: { subtotal: baseImponible, baseImponible, porcentajeIVA, cuotaIVA, totalIva: cuotaIVA, descuento: 0, total },
+    totales: { subtotal: baseImponible, baseImponible, porcentajeIVA, cuotaIVA, totalIva: cuotaIVA, descuento: 0, total, impuestos: impuestosAgrupadosGen },
   }
 
   if (factura.lineas.length === 0) throw new Error('No se encontraron líneas de detalle en la factura.')

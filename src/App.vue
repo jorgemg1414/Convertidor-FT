@@ -191,13 +191,33 @@
           <!-- Totals -->
           <div class="totals-box">
             <div class="totals-row">
-              <span>Base imponible</span>
-              <span>{{ fmt(factura.totales.baseImponible) }}</span>
+              <span>SubTotal</span>
+              <span>{{ fmt(factura.totales.subtotal || factura.totales.baseImponible) }}</span>
             </div>
-            <div class="totals-row">
-              <span>IVA ({{ factura.totales.porcentajeIVA }}%)</span>
-              <span>{{ fmt(factura.totales.cuotaIVA) }}</span>
+            <div class="totals-row" v-if="factura.totales.descuento">
+              <span>Descuento</span>
+              <span>{{ fmt(factura.totales.descuento) }}</span>
             </div>
+            <template v-if="factura.totales.impuestos && factura.totales.impuestos.length">
+              <div class="totals-row" v-for="(imp, index) in factura.totales.impuestos" :key="index">
+                <span>Base {{ imp.tipo }} ({{ imp.tasa }}%)</span>
+                <span>{{ fmt(imp.base) }}</span>
+              </div>
+              <div class="totals-row" v-for="(imp, index) in factura.totales.impuestos" :key="'c-' + index">
+                <span>{{ imp.tipo }} ({{ imp.tasa }}%)</span>
+                <span>{{ fmt(imp.cuota) }}</span>
+              </div>
+            </template>
+            <template v-else>
+              <div class="totals-row" v-if="factura.totales.baseImponible">
+                <span>Base IVA ({{ Math.round(factura.totales.porcentajeIVA) }}%)</span>
+                <span>{{ fmt(factura.totales.baseImponible) }}</span>
+              </div>
+              <div class="totals-row" v-if="factura.totales.cuotaIVA">
+                <span>IVA ({{ Math.round(factura.totales.porcentajeIVA) }}%)</span>
+                <span>{{ fmt(factura.totales.cuotaIVA) }}</span>
+              </div>
+            </template>
             <div class="totals-row total-row">
               <span>TOTAL</span>
               <span>{{ fmt(factura.totales.total) }}</span>
@@ -461,6 +481,7 @@ function processXML(content) {
     factura.value = parseFactura(content)
     saveToHistorial(factura.value, sucursal.value)
     addToast('success', 'Archivo procesado', `Factura ${factura.value.numero} cargada exitosamente`, 3500)
+    fireConfetti()
   } catch (e) {
     error.value = e.message || 'Error desconocido al parsear el XML.'
   }
