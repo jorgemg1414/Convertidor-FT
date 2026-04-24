@@ -246,7 +246,7 @@
 
       <!-- Historial -->
       <Transition name="fade-up">
-      <section class="card hist-card">
+      <section class="card hist-card anim-fade-up">
         <div class="hist-header">
           <div class="hist-title-row">
             <Clock :size="18" stroke-width="2" />
