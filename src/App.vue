@@ -225,20 +225,30 @@
 
       <!-- Historial -->
       <Transition name="fade-up">
-      <section v-if="historial.length" class="card hist-card">
+      <section class="card hist-card">
         <div class="hist-header">
           <div class="hist-title-row">
             <Clock :size="18" stroke-width="2" />
             <h2 class="hist-title">Historial reciente</h2>
-            <span class="hist-count">{{ historial.length }}</span>
+            <span v-if="historial.length" class="hist-count">{{ historial.length }}</span>
           </div>
-          <button class="btn-ghost btn-ghost--danger" @click="clearHistorial">
+          <button v-if="historial.length" class="btn-ghost btn-ghost--danger" @click="clearHistorial">
             <Trash2 :size="14" stroke-width="2" />
             Limpiar todo
           </button>
         </div>
 
-        <div class="hist-list">
+        <!-- Empty placeholder -->
+        <div v-if="!historial.length" class="hist-empty">
+          <div class="hist-empty-icon">
+            <Archive :size="48" stroke-width="1.5" />
+          </div>
+          <p class="hist-empty-title">Sin historial aún</p>
+          <p class="hist-empty-sub">Las facturas que generes aparecerán aquí</p>
+        </div>
+
+        <!-- Historial list -->
+        <div v-else class="hist-list">
           <div v-for="entry in historial" :key="entry.id" class="hist-item">
             <!-- Ícono tipo -->
             <div class="hist-icon" :class="entry.tipo === 'pago' ? 'hist-icon--pago' : 'hist-icon--factura'">
@@ -329,7 +339,7 @@
 import { ref, onMounted } from 'vue'
 import { parseFactura } from './utils/xmlParser.js'
 import { downloadPDF, previewPDF } from './utils/pdfGenerator.js'
-import { FolderOpen, ArrowDownToLine, Download, Eye, Paperclip, X, AlertCircle, MapPin, Clock, Trash2, FileText, CreditCard, Sun, Moon } from 'lucide-vue-next'
+import { FolderOpen, ArrowDownToLine, Download, Eye, Paperclip, X, AlertCircle, MapPin, Clock, Trash2, FileText, CreditCard, Sun, Moon, Archive } from 'lucide-vue-next'
 import confetti from 'canvas-confetti'
 import ToastNotification from './components/ToastNotification.vue'
 
@@ -1084,6 +1094,30 @@ function fmtDate(str) {
 .btn-ghost--danger:hover { background: var(--error-bg); color: var(--error); }
 
 .hist-list { display: flex; flex-direction: column; }
+
+.hist-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+.hist-empty-icon {
+  color: var(--text-muted);
+  opacity: .4;
+  margin-bottom: 16px;
+}
+.hist-empty-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.hist-empty-sub {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
 
 .hist-item {
   display: flex;
