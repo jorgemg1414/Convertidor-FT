@@ -1,5 +1,14 @@
 <template>
-  <div class="app" :data-theme="theme">
+  <div class="app">
+    <div class="floating-lights" aria-hidden="true">
+      <div
+        v-for="(orb, index) in orbs"
+        :key="index"
+        class="orb"
+        :class="orb.colorClass"
+        :style="orb.style"
+      />
+    </div>
     <!-- Header -->
     <header class="header anim-slide-down">
       <div class="header-inner">
@@ -10,10 +19,10 @@
             <p class="logo-sub">Convertidor XML → PDF</p>
           </div>
         </div>
-        <button class="theme-toggle" @click="toggleTheme" :title="theme === 'dark' ? 'Modo claro' : 'Modo oscuro'">
-          <Sun v-if="theme === 'dark'" :size="18" stroke-width="2" />
-          <Moon v-else :size="18" stroke-width="2" />
-        </button>
+        <button class="theme-toggle ripple" @click="toggleTheme(); triggerRipple($event)" :title="theme === 'dark' ? 'Modo claro' : 'Modo oscuro'">
+           <Sun v-if="theme === 'dark'" :size="18" stroke-width="2" />
+           <Moon v-else :size="18" stroke-width="2" />
+         </button>
       </div>
     </header>
 
@@ -35,14 +44,14 @@
           </div>
         </div>
         <div class="sucursal-grid">
-          <button
-            v-for="(s, index) in SUCURSALES"
-            :key="s.id"
-            class="suc-chip"
-            :class="{ 'suc-chip--active': sucursal === s.id }"
-            :style="{ animationDelay: (index * 40 + 100) + 'ms' }"
-            @click="sucursal = s.id"
-          >{{ s.label }}</button>
+        <button
+             v-for="(s, index) in SUCURSALES"
+             :key="s.id"
+             class="suc-chip ripple"
+             :class="{ 'suc-chip--active': sucursal === s.id }"
+             :style="{ animationDelay: (index * 40 + 100) + 'ms' }"
+             @click="sucursal = s.id; triggerRipple($event)"
+           >{{ s.label }}</button>
         </div>
       </section>
 
@@ -78,15 +87,15 @@
             {{ dragging ? 'Suelta el archivo aquí' : 'Selecciona o arrastra un archivo XML' }}
           </p>
           <p class="drop-sub">Solo archivos .xml · procesado localmente</p>
-          <button class="btn btn-outline" @click.stop="$refs.fileInput.click()">
-            Seleccionar archivo
-          </button>
+        <button class="btn btn-outline ripple" @click.stop="$refs.fileInput.click(); triggerRipple($event)">
+             Seleccionar archivo
+           </button>
         </div>
 
         <div v-if="fileName" class="file-badge">
           <span class="file-badge-icon"><Paperclip :size="16" stroke-width="2" /></span>
           <span>{{ fileName }}</span>
-          <button class="clear-btn" @click="reset" title="Limpiar"><X :size="15" stroke-width="2.5" /></button>
+          <button class="clear-btn ripple" @click="reset(); triggerRipple($event)" title="Limpiar"><X :size="15" stroke-width="2.5" /></button>
         </div>
       </section>
       </Transition>
@@ -111,11 +120,11 @@
             <p class="preview-sub">Revisa los datos antes de generar el PDF</p>
           </div>
           <div class="action-btns">
-            <button class="btn btn-secondary" @click="openPreview" :disabled="generating">
+            <button class="btn btn-secondary ripple" @click="openPreview(); triggerRipple($event)" :disabled="generating">
               <Eye :size="16" stroke-width="2" />
               <span>Vista previa</span>
             </button>
-            <button class="btn btn-primary" @click="download" :disabled="generating">
+            <button class="btn btn-primary ripple" @click="download(); triggerRipple($event)" :disabled="generating">
               <Download v-if="!generating && pdfStatus !== 'ready'" :size="16" stroke-width="2" />
               <Loader2 v-else-if="generating || pdfStatus === 'generating'" :size="16" stroke-width="2" class="spin" />
               <span v-if="generating || pdfStatus === 'generating'">Generando…</span>
@@ -253,10 +262,10 @@
             <span v-if="historial.length" class="hist-count">{{ historial.length }}</span>
           </div>
           <div class="hist-header-actions">
-            <button v-if="historial.length" class="btn-ghost btn-ghost--danger" @click.stop="clearHistorial">
-              <Trash2 :size="14" stroke-width="2" />
-              Limpiar todo
-            </button>
+            <button v-if="historial.length" class="btn-ghost btn-ghost--danger ripple" @click.stop="clearHistorial(); triggerRipple($event)">
+               <Trash2 :size="14" stroke-width="2" />
+               Limpiar todo
+             </button>
             <ChevronDown :size="20" stroke-width="2" class="hist-chevron" :class="{ 'hist-chevron--open': historialExpanded }" />
           </div>
         </div>
@@ -314,17 +323,17 @@
                 </div>
 
                 <div class="hist-actions">
-                  <button class="btn btn-secondary btn-sm" @click="previewFromHistorial(entry)" title="Vista previa">
-                    <Eye :size="14" stroke-width="2" />
-                  </button>
-                  <button class="btn btn-primary btn-sm" @click="downloadFromHistorial(entry)" :disabled="generatingHistory[entry.id]">
-                    <Download v-if="!generatingHistory[entry.id]" :size="14" stroke-width="2" />
-                    <span v-if="!generatingHistory[entry.id]">PDF</span>
-                    <span v-else>…</span>
-                  </button>
-                  <button class="btn-ghost" @click="removeFromHistorial(entry.id)" title="Eliminar">
-                    <X :size="14" stroke-width="2.5" />
-                  </button>
+                  <button class="btn btn-secondary btn-sm ripple" @click="previewFromHistorial(entry); triggerRipple($event)" title="Vista previa">
+                     <Eye :size="14" stroke-width="2" />
+                   </button>
+                   <button class="btn btn-primary btn-sm ripple" @click="downloadFromHistorial(entry); triggerRipple($event)" :disabled="generatingHistory[entry.id]">
+                     <Download v-if="!generatingHistory[entry.id]" :size="14" stroke-width="2" />
+                     <span v-if="!generatingHistory[entry.id]">PDF</span>
+                     <span v-else>…</span>
+                   </button>
+                   <button class="btn-ghost ripple" @click="removeFromHistorial(entry.id); triggerRipple($event)" title="Eliminar">
+                     <X :size="14" stroke-width="2.5" />
+                   </button>
                 </div>
               </div>
             </div>
@@ -339,9 +348,9 @@
     <div v-if="previewUrl" class="modal-overlay" @click.self="closePreview">
       <div class="modal">
         <div class="modal-header">
-          <h3>Vista previa del PDF</h3>
-          <button class="close-btn" @click="closePreview"><X :size="18" stroke-width="2" /></button>
-        </div>
+           <h3>Vista previa del PDF</h3>
+           <button class="close-btn ripple" @click="closePreview(); triggerRipple($event)"><X :size="18" stroke-width="2" /></button>
+         </div>
         <iframe :src="previewUrl" class="pdf-frame" title="Vista previa PDF"></iframe>
       </div>
     </div>
@@ -377,6 +386,38 @@ import ToastNotification from './components/ToastNotification.vue'
 
 const HISTORIAL_KEY = 'ft_historial'
 const HISTORIAL_MAX = 30
+
+// Floating lights
+const orbs = ref([]);
+
+function generateOrbs() {
+  const items = []
+  const colors = ['blue', 'orange']
+  for (let i = 0; i < 12; i++) {
+    const size = 80 + Math.random() * 120
+    const left = Math.random() * 100
+    const top = Math.random() * 100
+    const duration = 40 + Math.random() * 40
+    const delay = -(Math.random() * 40)
+    const colorClass = colors[i % 2]
+    
+    items.push({
+      id: i,
+      colorClass: colorClass,
+      style: {
+        width: size + 'px',
+        height: size + 'px',
+        left: left + '%',
+        top: top + '%',
+        animationDuration: duration + 's',
+        animationDelay: delay + 's'
+      }
+    })
+  }
+  orbs.value = items
+}
+
+generateOrbs()
 
 const SUCURSALES = [
   { id: 'ACATIC',      label: 'Acatic' },
@@ -450,11 +491,13 @@ function fireConfetti() {
 
 onMounted(() => {
   theme.value = localStorage.getItem('ft_theme') || 'light'
+  document.documentElement.dataset.theme = theme.value
 })
 
 function toggleTheme() {
   theme.value = theme.value === 'dark' ? 'light' : 'dark'
   localStorage.setItem('ft_theme', theme.value)
+  document.documentElement.dataset.theme = theme.value
 }
 
 function loadHistorial() {
@@ -651,10 +694,46 @@ function fmtDate(str) {
 
 <style scoped>
 .app {
-  min-height: 100vh;
+  min-height:100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  position: relative;
+  z-index:1;
+  background: transparent;
+  overflow: hidden;
+}
+
+/* Floating lights - dentro del app, sobre el fondo */
+.floating-lights {
+  position: absolute;
+  inset:0;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.orb {
+  position: absolute;
+  border-radius:50%;
+  filter: blur(60px);
+  animation: float-orb 25s ease-in-out infinite;
+  will-change: transform;
+  opacity:0.6;
+}
+
+.orb.blue {
+  background: radial-gradient(circle, rgba(59,130,246,0.6) 0%, transparent 70%);
+}
+
+.orb.orange {
+  background: radial-gradient(circle, rgba(249,115,22,0.5) 0%, transparent 70%);
+}
+
+@keyframes float-orb {
+  0%,100% { transform: translate(0,0) scale(1); }
+  25% { transform: translate(15px,-20px) scale(1.02); }
+  50% { transform: translate(-10px,15px) scale(0.98); }
+  75% { transform: translate(20px,15px) scale(1.01); }
 }
 
 /* Header */
@@ -684,8 +763,8 @@ function fmtDate(str) {
   gap: 12px;
 }
 .logo-icon { height: 36px; width: 36px; object-fit: cover; border-radius: 50%; }
-.logo h1 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1px; }
-.logo-sub { font-size: 0.78rem; opacity: .75; }
+.logo h1 { font-size: 1.2rem; font-weight: 800; margin-bottom: 1px; letter-spacing: -0.02em; font-family: var(--font-heading); }
+.logo-sub { font-size: 0.8rem; opacity: .75; font-weight: 500; }
 
 .theme-toggle {
   background: rgba(255,255,255,0.15);
@@ -759,8 +838,8 @@ function fmtDate(str) {
   justify-content: center;
   flex-shrink: 0;
 }
-.step-title { font-size: 1.15rem; font-weight: 600; color: var(--text); }
-.step-sub { font-size: 0.9rem; color: var(--text-muted); margin-top: 3px; }
+.step-title { font-size: 1.2rem; font-weight: 700; color: var(--text); font-family: var(--font-heading); letter-spacing: -0.01em; }
+.step-sub { font-size: 0.9rem; color: var(--text-muted); margin-top: 3px; font-weight: 500; }
 .sucursal-badge {
   margin-left: auto;
   display: flex;
@@ -911,8 +990,8 @@ function fmtDate(str) {
   padding: 20px 24px 16px;
   border-bottom: 1px solid var(--border);
 }
-.preview-header h2 { font-size: 1.1rem; color: var(--text); }
-.preview-sub { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
+.preview-header h2 { font-size: 1.15rem; color: var(--text); font-family: var(--font-heading); font-weight: 700; }
+.preview-sub { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; font-weight: 500; }
 .action-btns { display: flex; gap: 10px; flex-wrap: wrap; }
 .pdf-status {
   display: inline-flex;
@@ -1240,6 +1319,12 @@ function fmtDate(str) {
   justify-content: space-between;
   padding: 18px 24px 16px;
   border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: background .15s;
+}
+.hist-header:hover {
+  background: var(--surface);
 }
 .hist-header--clickable {
   cursor: pointer;
@@ -1267,7 +1352,7 @@ function fmtDate(str) {
   gap: 10px;
   color: var(--text);
 }
-.hist-title { font-size: 1rem; font-weight: 600; color: var(--text); }
+.hist-title { font-size: 1.05rem; font-weight: 700; color: var(--text); font-family: var(--font-heading); letter-spacing: -0.01em; }
 .hist-count {
   background: var(--primary);
   color: white;
